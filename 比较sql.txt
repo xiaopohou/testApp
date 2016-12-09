@@ -1,0 +1,35 @@
+--商家信息及报价供位置搜索使用
+  SELECT res.ServicesSettlementId,res.ProvinceName+res.CityName+res.address as FullAddress,* FROM (   
+  
+  SELECT ROW_NUMBER() OVER(ORDER BY PartnerId DESC) AS num,* FROM ( 
+
+    SELECT  p.PartnerId,p.PartnerName,p.Address,p.Status,p.IsShop ,s.BrandId,s.GoodsId,s.brandName,s.GoodsName,s.SettlementPrice1,s.SettlementPrice2,s.ServicesSettlementId,
+	
+	
+	natp.ProvinceName  as 'ProvinceName',natg.CityName as 'CityName'  
+	 
+	 -- CASE '1'     WHEN '1' THEN SettlementPrice1 + 100     WHEN '2' THEN SettlementPrice2 + 100    END as 'remotetotal' 
+
+	    FROM 
+		(    
+			SELECT * FROM BSM_Marketing.dbo.ServicesSettlement WHERE ServicesSettlementId IN  
+			 ( 
+				SELECT MAX(ServicesSettlementId) FROM BSM_Marketing.dbo.ServicesSettlement WHERE  Status=1 GROUP BY BrandId,GoodsId,PartnerId
+			  )
+		 )
+		  AS s
+		  INNER JOIN 
+		  bsm_partner.dbo.Partner AS p ON s.PartnerId=p.PartnerId 
+		    LEFT JOIN BSM_BaseData.dbo.NatGeoProvince AS natp
+                        ON p.ProvinceCode=natp.ProvinceCode 
+                        LEFT JOIN BSM_BaseData.dbo.NatGeoCity AS natg
+                        ON p.CityCode=natg.CityCode
+
+		  WHERE p.Status=4 and s.SettlementPrice1 is not null and s.SettlementPrice2 is not null
+
+   -- and BrandId=23 and GoodsId=55 
+	
+	and p.Address is not null  
+	--and p.PartnerId not in (1081761,1082119,1082293,1082327,1082328) 
+
+	  ) AS res1) AS res WHERE res.num>0 AND res.num<=10
